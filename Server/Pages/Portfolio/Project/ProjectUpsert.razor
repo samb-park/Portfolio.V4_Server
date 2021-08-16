@@ -1,0 +1,206 @@
+@page "/portfolio/project/update/{Id:int}"
+@page "/portfolio/project/create"
+
+@using Server.Service.IService
+
+@inject IProjectRepository _projectRepository
+@inject NavigationManager _navigationManager
+@inject ISnackbar _snackbar
+@inject IFileUpload _fileUpload
+
+<MudBreadcrumbs Items="BreadcrumbItems"></MudBreadcrumbs>
+<MudDivider Class="mb-7" DividerType="DividerType.Middle" Light="true"/>
+@if (PorojectModel != null)
+{
+    <MudGrid Spacing="3">
+        <MudItem xs="12" Class="d-flex justify-space-between">
+            <MudText Typo="Typo.h4" Style="font-weight: bolder">@Title PROJECT</MudText>
+        </MudItem>
+        <MudItem xs="12">
+            <MudPaper Outlined="true" Elevation="0" Class="pa-5">
+                <EditForm Model="PorojectModel" OnValidSubmit="HandleProjectUpsert">
+                    <DataAnnotationsValidator/>
+                    <MudGrid>
+                        <MudItem xs="12" md="6">
+                            <MudTextField Label="Title" HelperText="Please enter title"
+                                          @bind-Value="PorojectModel.Title" For="@(() => PorojectModel.Title)"/>
+                        </MudItem>
+                        <MudItem xs="12" md="6">
+                            <MudTextField Label="GithubUrl" HelperText="Please enter GithubUrl"
+                                          @bind-Value="PorojectModel.GithubUrl" For="@(() => PorojectModel.GithubUrl)"/>
+                        </MudItem>
+                        <MudItem xs="12" md="6">
+                            <MudTextField Label="ProjectUrl" HelperText="Please enter ProjectUrl"
+                                          @bind-Value="PorojectModel.ProjectUrl" For="@(() => PorojectModel.ProjectUrl)"/>
+                        </MudItem>
+                        <MudItem xs="12" sm="6" md="4">
+                            <MudSelect T="string" For="@(() => PorojectModel.Type)" @bind-Value="@PorojectModel.Type" Label="Select Project Type" Variant="Variant.Outlined" OffsetY="true">
+                                @foreach (var type in SD.ProjectTypes)
+                                {
+                                    <MudSelectItem Value="@type"/>
+                                }
+                            </MudSelect>
+                        </MudItem>
+                        <MudItem xs="12">
+                            <MudTextField Label="Short Description" HelperText="Short Description"
+                                          @bind-Value="PorojectModel.ShortDescription" Lines="1"/>
+                        </MudItem>
+                        <MudItem xs="12">
+                            <MudTextField Label="Description" HelperText="Description"
+                                          @bind-Value="PorojectModel.Description" Lines="3"/>
+                        </MudItem>
+                        <MudItem Class="d-flex align-center" xs="12" sm="6">
+                            <MudCheckBox @bind-Checked="@PorojectModel.Featured" Label="Is featured project?"/>
+                        </MudItem>
+                        <MudItem xs="12" Class="d-flex align-center">
+                            <InputFile id="fileInput" OnChange="HandleImageUpload" hidden/>
+
+                            <MudButton HtmlTag="label"
+                                       Variant="Variant.Outlined"
+                                       Color="Color.Secondary"
+                                       StartIcon="@Icons.Filled.CloudUpload"
+                                       for="fileInput"
+                                       Class="mr-5">
+                                Upload Files
+                            </MudButton>
+                            @if (FileName != null)
+                            {
+                                <MudText Class="ml-5">
+                                    @FileName
+                                </MudText>
+                            }
+                        </MudItem>
+
+                        <MudItem xs="12">
+                            <MudGrid Spacing="1">
+                                <MudItem xs="3" md="2">
+                                    <MudButton FullWidth="true" ButtonType="ButtonType.Submit" Variant="Variant.Outlined" Color="Color.Primary" Class="ml-auto">Save</MudButton>
+                                </MudItem>
+                                <MudItem xs="3" md="2">
+                                    <MudButton FullWidth="true" ButtonType="ButtonType.Button" Link="/portfolio/project" Variant="Variant.Filled" Color="Color.Secondary" Class="ml-auto">Cancel</MudButton>
+                                </MudItem>
+                            </MudGrid>
+                        </MudItem>
+                    </MudGrid>
+                </EditForm>
+            </MudPaper>
+        </MudItem>
+    </MudGrid>
+}
+
+
+@code {
+
+    [Parameter]
+    public int? Id { get; set; }
+
+    private string Title { get; set; } = "CREATE";
+    private ProjectDTO PorojectModel { get; set; } = new ProjectDTO();
+
+    private IBrowserFile Files { get; set; }
+    private string FileName { get; set; }
+
+    private List<BreadcrumbItem> BreadcrumbItems { get; set; } = new List<BreadcrumbItem>
+    {
+        new BreadcrumbItem("Portfolio", href: "/portfolio"),
+        new BreadcrumbItem("Project", href: "/portfolio/project"),
+        new BreadcrumbItem("Create", href: "/portfolio/project/create"),
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        Task.Delay(5000);
+
+
+        if (Id == null)
+        {
+            Title = "CREATE";
+            PorojectModel = new ProjectDTO();
+        }
+        else
+        {
+            PorojectModel = await _projectRepository.GetProject(Id.Value);
+            Title = "UPDATE";
+            if (PorojectModel.ProjectImagesUrl != null)
+            {
+                var imageName = PorojectModel.ProjectImagesUrl.Replace($"{_navigationManager.BaseUri}Images/", "");
+                FileName = imageName;
+            }
+        }
+    }
+
+    private async void HandleImageUpload(InputFileChangeEventArgs e)
+    {
+        try
+        {
+            if (e.GetMultipleFiles().Count > 0)
+            {
+                var file = e.File;
+
+                System.IO.FileInfo fileInfo = new System.IO.FileInfo(file.Name);
+                if (fileInfo.Extension.ToLower() == ".jpg" ||
+                    fileInfo.Extension.ToLower() == ".png" ||
+                    fileInfo.Extension.ToLower() == ".jpeg")
+                {
+                    Files = file;
+                    FileName = Files.Name;
+                }
+                else
+                {
+                    _snackbar.Add($"Please select .jpg/ .jpeg/ .png file only", Severity.Error);
+                }
+            }
+            else
+            {
+                _snackbar.Add($"Image uploading failed", Severity.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            _snackbar.Add($"{ex.Message}", Severity.Error);
+        }
+    }
+
+    private async Task HandleProjectUpsert()
+    {
+        try
+        {
+            if (Title == "CREATE")
+            {
+                if (Files != null)
+                {
+                    if (PorojectModel.ProjectImagesUrl != null)
+                    {
+                        var imageName = PorojectModel.ProjectImagesUrl.Replace($"{_navigationManager.BaseUri}Images/", "");
+                        var result = _fileUpload.DeleteFile(imageName);
+                    }
+                    PorojectModel.ProjectImagesUrl = await _fileUpload.UploadFile(Files);
+                }
+
+                var createdProject = await _projectRepository.CreateProject(PorojectModel);
+                _snackbar.Add("Create Success", Severity.Success);
+            }
+            else
+            {
+                if (Files != null)
+                {
+                    if (PorojectModel.ProjectImagesUrl != null)
+                    {
+                        var imageName = PorojectModel.ProjectImagesUrl.Replace($"{_navigationManager.BaseUri}Images/", "");
+                        var result = _fileUpload.DeleteFile(imageName);
+                    }
+                    PorojectModel.ProjectImagesUrl = await _fileUpload.UploadFile(Files);
+                }
+
+                var updatedProject = await _projectRepository.UpdateProject(PorojectModel.Id, PorojectModel);
+                _snackbar.Add("Update Success", Severity.Success);
+            }
+        }
+        catch (Exception)
+        {
+            _snackbar.Add("Fail", Severity.Error);
+        }
+        _navigationManager.NavigateTo("/portfolio/project");
+    }
+
+}

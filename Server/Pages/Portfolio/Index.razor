@@ -1,0 +1,11 @@
+@page "/portfolio"
+<MudBreadcrumbs Class="mb-3" Items="BreadcrumbItems"></MudBreadcrumbs>
+<h3>PortfolioHome</h3>
+
+@code {
+    private List<BreadcrumbItem> BreadcrumbItems { get; set; }= new List<BreadcrumbItem>
+    {
+        new BreadcrumbItem("Portfolio", href: "/portfolio"),
+    };
+    
+}

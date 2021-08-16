@@ -1,0 +1,110 @@
+@page "/portfolio/experience"
+
+@inject IExperienceRepository _experienceRepository
+@inject NavigationManager _navigationManager
+@inject ISnackbar _snackbar
+@inject IDialogService DialogService
+
+<MudBreadcrumbs Items="BreadcrumbItems"></MudBreadcrumbs>
+<MudDivider Class="mb-7" DividerType="DividerType.Middle" Light="true"/>
+
+<MudGrid Spacing="3">
+    <MudItem xs="6" md="6" Class="d-flex justify-space-between">
+        <MudText Typo="Typo.h4" Style="font-weight: bolder">@Title</MudText>
+    </MudItem>
+    <MudItem xs="6" md="6" Class="d-flex align-center justify-end">
+        @if (SelectedExperiece != null)
+        {
+            <MudButton Link="@($"/portfolio/experience/update/{SelectedExperiece.Id}")" Class="mr-2" Color="Color.Secondary" Variant="Variant.Outlined">EDIT</MudButton>
+            <MudButton OnClick="HandleDelete" Class="mr-2" Color="Color.Secondary" Variant="Variant.Filled">DEL</MudButton>
+        }
+        <MudButton Link="/portfolio/experience/create" Color="Color.Success" Variant="Variant.Filled">ADD</MudButton>
+    </MudItem>
+    <MudItem xs="12">
+
+        <MudTabs Class="pa-5" Rounded="true" Outlined="true" Elevation="0" ApplyEffectsToContainer="true" PanelClass="mt-5" Centered="true">
+            @foreach (var type in SD.ExperienceTypes)
+            {
+                <MudTabPanel Text="@type">
+                    <MudTable Items="@Experiences" Hover=true Bordered=false Elevation="0" @bind-SelectedItem="SelectedExperiece">
+
+                        <HeaderContent>
+                            <MudTh>Title</MudTh>
+                            <MudTh>Position</MudTh>
+                            <MudTh>Start Date</MudTh>
+                            <MudTh>End Date</MudTh>
+                            <MudTh>Molar mass</MudTh>
+                        </HeaderContent>
+                        <RowTemplate>
+                            @if (type == context.Type)
+                            {
+                                <MudTd DataLabel="Title">@context.Title</MudTd>
+                                <MudTd DataLabel="Position">@context.Position</MudTd>
+                                <MudTd DataLabel="Start Date">@context.StartDate.Value.ToString("MMM yyyy")</MudTd>
+                                <MudTd DataLabel="End Date">@(context.Current == false ? context.EndDate.Value.ToString("MMM yyyy") : "present")</MudTd>
+                                <MudTd DataLabel="Molar mass"></MudTd>
+                            }
+
+                        </RowTemplate>
+                        <PagerContent>
+                            <MudTablePager/>
+                        </PagerContent>
+                    </MudTable>
+                </MudTabPanel>
+            }
+        </MudTabs>
+    </MudItem>
+</MudGrid>
+
+@code {
+
+    private string Title { get; set; } = "EXPERIENCE";
+    private IEnumerable<ExperienceDTO> Experiences { get; set; } = new List<ExperienceDTO>();
+    private ExperienceDTO SelectedExperiece { get; set; } = null;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Experiences = await _experienceRepository.GetAllExperiences();
+
+        if (Experiences.Count() == 0)
+        {
+            _navigationManager.NavigateTo("/portfolio/experience/create",true);
+        }
+    }
+
+    private List<BreadcrumbItem> BreadcrumbItems { get; set; } = new List<BreadcrumbItem>
+    {
+        new BreadcrumbItem("Portfolio", href: "/portfolio"),
+        new BreadcrumbItem("Experience", href: "/portfolio/experience"),
+    };
+
+    private async Task HandleDelete()
+    {
+        try
+        {
+            var dialog = DialogService.Show<DeleteConfirmation>("Delete Confirmation");
+            var result = await dialog.Result;
+            if (result.Cancelled)
+            {
+                _snackbar.Add("cancel", Severity.Error);
+                return;
+            }
+            var deletedExperiece = await _experienceRepository.DeleteExperience(SelectedExperiece.Id);
+
+            if (deletedExperiece != 0)
+            {
+                _snackbar.Add("Delete Success", Severity.Success);
+                Experiences = await _experienceRepository.GetAllExperiences();
+                SelectedExperiece = null;
+                return;
+            }
+
+            _snackbar.Add("Delete Failure", Severity.Error);
+        }
+        catch (Exception)
+        {
+            _snackbar.Add("Delete Failure", Severity.Error);
+        }
+    }
+
+}

@@ -1,0 +1,123 @@
+@page "/portfolio/experience/update/{Id:int}"
+@page "/portfolio/experience/create"
+
+@inject IExperienceRepository _experienceRepository
+@inject NavigationManager _navigationManager
+@inject ISnackbar _snackbar
+
+<MudBreadcrumbs Items="BreadcrumbItems"></MudBreadcrumbs>
+<MudDivider Class="mb-7" DividerType="DividerType.Middle" Light="true"/>
+
+<MudGrid Spacing="3">
+    <MudItem xs="12" Class="d-flex justify-space-between">
+        <MudText Typo="Typo.h4" Style="font-weight: bolder">@Title EXPERIENCE</MudText>
+    </MudItem>
+    <MudItem xs="12">
+        <MudPaper Outlined="true" Elevation="0" Class="pa-5">
+            <EditForm Model="ExperienceModel" OnValidSubmit="HandleExperienceUpsert">
+                <DataAnnotationsValidator/>
+                <MudGrid>
+                    <MudItem xs="12">
+                        <MudTextField Label="Title" HelperText="Please enter title"
+                                      @bind-Value="ExperienceModel.Title" For="@(() => ExperienceModel.Title)"/>
+                    </MudItem>
+                    <MudItem xs="12">
+                        <MudTextField Label="Position" HelperText="Please enter position"
+                                      @bind-Value="ExperienceModel.Position" For="@(() => ExperienceModel.Position)"/>
+                    </MudItem>
+                    <MudItem xs="12" md="6">
+                        <MudDatePicker Label="Start Date" @bind-Date="ExperienceModel.StartDate" OpenTo="OpenTo.Month"/>
+                    </MudItem>
+                    <MudItem xs="12" md="6">
+                        <MudDatePicker Label="End Date" @bind-Date="ExperienceModel.EndDate" OpenTo="OpenTo.Month"/>
+                    </MudItem>
+                    <MudItem xs="12">
+                        <MudTextField Label="Description" HelperText="Describe your experience"
+                                      @bind-Value="ExperienceModel.Description" Lines="6"/>
+                    </MudItem>
+
+                    <MudItem xs="12" sm="6" md="4">
+                        <MudSelect T="string" For="@(() => ExperienceModel.Type)" @bind-Value="@ExperienceModel.Type" Label="Select Experience Type" Variant="Variant.Outlined" OffsetY="true">
+                            @foreach (var type in SD.ExperienceTypes)
+                            {
+                                <MudSelectItem Value="@type"/>
+                            }
+                        </MudSelect>
+                    </MudItem>
+                    <MudItem Class="d-flex align-center justify-center" xs="12" sm="6" md="4">
+                        <MudCheckBox @bind-Checked="@ExperienceModel.Current" Label="Is current working?"/>
+                    </MudItem>
+                    <MudItem Class="d-flex align-center justify-center" xs="12" sm="12" md="4">
+                        @if (ExperienceModel.Type != null)
+                        {
+                            <MudChip Variant="Variant.Outlined">@(ExperienceModel.Type)</MudChip>
+                        }
+                        <MudChip Variant="Variant.Outlined">@(ExperienceModel.Current == true ? "WORKING" : "NOT WORKING")</MudChip>
+                    </MudItem>
+
+                    <MudItem xs="12">
+                        <MudGrid Spacing="1">
+                            <MudItem xs="3" md="2">
+                                <MudButton FullWidth="true" ButtonType="ButtonType.Submit" Variant="Variant.Outlined" Color="Color.Primary" Class="ml-auto">Save</MudButton>
+                            </MudItem>
+                            <MudItem xs="3" md="2">
+                                <MudButton FullWidth="true" ButtonType="ButtonType.Button" Link="/portfolio/experience" Variant="Variant.Filled" Color="Color.Secondary" Class="ml-auto">Cancel</MudButton>
+                            </MudItem>
+                        </MudGrid>
+                    </MudItem>
+                </MudGrid>
+            </EditForm>
+        </MudPaper>
+    </MudItem>
+</MudGrid>
+
+@code {
+    [Parameter]public int? Id { get; set; }
+
+    private string Title { get; set; } = "CREATE";
+    private ExperienceDTO ExperienceModel { get; set; } = new ExperienceDTO();
+    private List<BreadcrumbItem> BreadcrumbItems { get; set; } = new List<BreadcrumbItem>
+    {
+        new BreadcrumbItem("Portfolio", href: "/portfolio"),
+        new BreadcrumbItem("Experience", href: "/portfolio/experience"),
+        new BreadcrumbItem("Create", href: "/portfolio/experience/create"),
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (Id == null)
+        {
+            Title = "CREATE";
+            ExperienceModel = new ExperienceDTO();
+        }
+        else
+        {
+            Title = "UPDATE";
+            ExperienceModel = await _experienceRepository.GetExperience(Id.Value);
+        }
+    }
+
+    private async Task HandleExperienceUpsert()
+    {
+        try
+        {
+            if (Title == "CREATE" && Id == null)
+            {
+                var createdExperience = await _experienceRepository.CreateExperience(ExperienceModel);
+                _snackbar.Add("Create Success", Severity.Success);
+            }
+            else
+            {
+                var updatedExperience = await _experienceRepository.UpdateExperience(ExperienceModel.Id,ExperienceModel);
+                _snackbar.Add("Update Success", Severity.Success);
+            }
+
+        }
+        catch (Exception)
+        {
+            _snackbar.Add("Fail", Severity.Error);
+        }
+        _navigationManager.NavigateTo("/portfolio/experience");
+    }
+
+}

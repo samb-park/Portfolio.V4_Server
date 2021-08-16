@@ -1,0 +1,24 @@
+﻿@page "/"
+<MudBreadcrumbs Class="mb-3" Items="BreadcrumbItems"></MudBreadcrumbs>
+<MudGrid>
+    <MudItem xs="12" md="6">
+
+        <MudCardMedia Image="@imageUrl" Height="400"/>
+
+    </MudItem>
+    <MudItem xs="12" md="6">
+        bbb
+    </MudItem>
+    <MudItem xs="12" md="6">
+        ccc
+    </MudItem>
+</MudGrid>
+
+
+@code{
+    private List<BreadcrumbItem> BreadcrumbItems { get; set; } = new List<BreadcrumbItem>
+    {
+        new BreadcrumbItem("Server Home", href: "/"),
+    };
+    public string imageUrl { get; set; } = "/images/about.jpg";
+}

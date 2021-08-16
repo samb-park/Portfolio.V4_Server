@@ -1,0 +1,68 @@
+﻿@using MudBlazor.ThemeManager
+@using Server.Helper
+@using Color = MudBlazor.Color
+@inherits LayoutComponentBase
+
+<MudThemeProvider Theme="_themeManager.Theme"/>
+<MudDialogProvider/>
+<MudSnackbarProvider/>
+
+<MudLayout>
+    <MudAppBar Class="mt-5" Dense="false" Elevation="0">
+        <MudContainer Class="d-flex justify-space-between" >
+            <MudText Color="Color.Primary" Typo="Typo.h6" Style="font-weight: bold">SERVER</MudText>
+            <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Dark" Edge="Edge.Start" OnClick="@((e) => DrawerToggle())"/>
+        </MudContainer>
+
+    </MudAppBar>
+    <MudDrawer @bind-Open="@_drawerOpen" Height="100%" Variant="@DrawerVariant.Temporary">
+        <NavMenu/>
+    </MudDrawer>
+
+    <MudMainContent>
+        <MudContainer >
+            @Body
+        </MudContainer>
+    </MudMainContent>
+
+</MudLayout>
+
+@code {
+
+    private ThemeManagerTheme _themeManager = new ThemeManagerTheme
+    {
+        Theme = new Theme(),
+        DrawerClipMode = DrawerClipMode.Always,
+        FontFamily = "Montserrat",
+        DefaultBorderRadius = 6,
+        AppBarElevation = 1,
+        DrawerElevation = 1
+    };
+
+    public bool _drawerOpen = false;
+    public bool _themeManagerOpen = false;
+
+    void DrawerToggle()
+    {
+        _drawerOpen = !_drawerOpen;
+    }
+
+    void OpenThemeManager(bool value)
+    {
+        _themeManagerOpen = value;
+    }
+
+    void UpdateTheme(ThemeManagerTheme value)
+    {
+        _themeManager = value;
+        StateHasChanged();
+    }
+
+    protected override void OnInitialized()
+    {
+        StateHasChanged();
+    }
+
+
+
+}

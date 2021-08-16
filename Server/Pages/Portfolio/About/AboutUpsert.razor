@@ -1,0 +1,251 @@
+@page "/portfolio/about"
+
+@using Server.Service.IService
+
+@inject IAboutMeRepository _aboutMeRepository
+@inject NavigationManager _navigationManager
+@inject ISnackbar _snackbar
+@inject IFileUpload _fileUpload
+
+<MudBreadcrumbs Items="BreadcrumbItems"></MudBreadcrumbs>
+<MudDivider Class="mb-7" DividerType="DividerType.Middle" Light="true"/>
+
+<MudGrid Spacing="3">
+    <MudItem xs="12" Class="d-flex justify-space-between">
+        <MudText Typo="Typo.h4" Style="font-weight: bolder">@Title ABOUT</MudText>
+    </MudItem>
+    @if (AboutMeModel != null)
+    {
+        <MudItem xs="12">
+            <MudPaper Outlined="true" Elevation="0" Class="pa-5">
+                <EditForm Model="AboutMeModel" OnValidSubmit="HandleAboutUpsert">
+                    <DataAnnotationsValidator/>
+                    <MudGrid>
+                        <MudItem xs="12" md="6">
+                            <MudTextField Label="Email" HelperText="Please enter Email"
+                                          @bind-Value="AboutMeModel.EmailUrl" For="@(() => AboutMeModel.EmailUrl)"/>
+                        </MudItem>
+                        <MudItem xs="12" md="6">
+                            <MudTextField Label="Facebook" HelperText="Please enter Facebook"
+                                          @bind-Value="AboutMeModel.FacebookUrl" For="@(() => AboutMeModel.FacebookUrl)"/>
+                        </MudItem>
+                        <MudItem xs="12" md="6">
+                            <MudTextField Label="Github" HelperText="Please enter Github"
+                                          @bind-Value="AboutMeModel.GithubUrl" For="@(() => AboutMeModel.GithubUrl)"/>
+                        </MudItem>
+                        <MudItem xs="12" md="6">
+                            <MudTextField Label="Instagram" HelperText="Please enter Instagram"
+                                          @bind-Value="AboutMeModel.InstagramUrl" For="@(() => AboutMeModel.InstagramUrl)"/>
+                        </MudItem>
+                        <MudItem xs="12" md="6">
+                            <MudTextField Label="Linkedin" HelperText="Please enter Linkedin"
+                                          @bind-Value="AboutMeModel.LinkedInUrl" For="@(() => AboutMeModel.LinkedInUrl)"/>
+                        </MudItem>
+                        <MudItem xs="12" md="6">
+                            <MudTextField Label="Website" HelperText="Please enter Website"
+                                          @bind-Value="AboutMeModel.PersonalUrl" For="@(() => AboutMeModel.PersonalUrl)"/>
+                        </MudItem>
+                        <MudItem xs="12">
+                            <MudTextField Label="Description" HelperText="Describe your experience"
+                                          @bind-Value="AboutMeModel.Descripton" Lines="3"/>
+                        </MudItem>
+
+                        <MudItem xs="12" md="6" Class="d-flex">
+                            <MudTextField @bind-Value="@AddedSkill"
+                                          Immediate="true"
+                                          Placeholder="Write your skill"
+                                          Clearable="true"
+                                          Class="mt-0"/>
+                            <MudButton OnClick="HandleAddingSkills" Variant="Variant.Outlined" Size="Size.Small" Color="Color.Secondary" Class="ma-2">Add</MudButton>
+                        </MudItem>
+                        <MudItem xs="12">
+                            @foreach (var skill in Skills)
+                            {
+                                <MudChip Color="Color.Secondary" OnClose="() => HandleCloseSkill(skill)" Variant="Variant.Outlined">@(skill)</MudChip>
+                            }
+                        </MudItem>
+
+                        <MudItem xs="12" Class="d-flex align-center">
+                            <InputFile id="fileInput" OnChange="HandleImageUpload" hidden/>
+
+                            <MudButton HtmlTag="label"
+                                       Variant="Variant.Outlined"
+                                       Color="Color.Secondary"
+                                       StartIcon="@Icons.Filled.CloudUpload"
+                                       for="fileInput"
+                                       Class="mr-5">
+                                Upload Files
+                            </MudButton>
+                            @if (FileName != null)
+                            {
+                                <MudText Class="ml-5">
+                                    @FileName
+                                </MudText>
+                            }
+                        </MudItem>
+
+                        <MudItem xs="12">
+                            <MudGrid Spacing="1">
+                                <MudItem xs="3" md="2">
+                                    <MudButton FullWidth="true" ButtonType="ButtonType.Submit" Variant="Variant.Outlined" Color="Color.Primary" Class="ml-auto">Save</MudButton>
+                                </MudItem>
+                                <MudItem xs="3" md="2">
+                                    <MudButton FullWidth="true" ButtonType="ButtonType.Button" Link="/portfolio/" Variant="Variant.Filled" Color="Color.Secondary" Class="ml-auto">Cancel</MudButton>
+                                </MudItem>
+                            </MudGrid>
+                        </MudItem>
+                    </MudGrid>
+                </EditForm>
+            </MudPaper>
+        </MudItem>
+    }
+
+</MudGrid>
+
+@code {
+    public int? Id { get; set; }
+
+    private string Title { get; set; } = "CREATE";
+    private AboutMeDTO AboutMeModel { get; set; } = new AboutMeDTO();
+    private List<string> Skills { get; set; } = new List<string>();
+    private string AddedSkill { get; set; } = null;
+
+    private IBrowserFile Files { get; set; }
+    private string FileName { get; set; }
+
+    private List<BreadcrumbItem> BreadcrumbItems { get; set; } = new List<BreadcrumbItem>
+    {
+        new BreadcrumbItem("Portfolio", href: "/portfolio"),
+        new BreadcrumbItem("About", href: "/portfolio/about"),
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        AboutMeModel = await _aboutMeRepository.GetAboutMe();
+
+        if (AboutMeModel != null)
+        {
+            Title = "UPDATE";
+            if (AboutMeModel.Skills != null)
+            {
+                Skills = AboutMeModel.Skills.Split(',').ToList();
+            }
+            if (AboutMeModel.AboutImageUrl != null)
+            {
+                var imageName = AboutMeModel.AboutImageUrl.Replace($"{_navigationManager.BaseUri}Images/", "");
+                FileName = imageName;
+            }
+        }
+        else
+        {
+            Title = "CREATE";
+            AboutMeModel = new AboutMeDTO();
+        }
+    }
+
+    private async Task HandleAddingSkills()
+    {
+        if (!string.IsNullOrWhiteSpace(AddedSkill))
+        {
+            if (Skills.Contains(AddedSkill.ToUpper()))
+            {
+                _snackbar.Add($"{AddedSkill} is already added.", Severity.Error);
+                AddedSkill = null;
+                return;
+            }
+
+            Skills.Add(AddedSkill.ToUpper());
+            Skills.Sort();
+            
+            AddedSkill = null;
+            _snackbar.Add("Skill added", Severity.Success);
+        }
+        else
+        {
+            _snackbar.Add("Skill field is empty", Severity.Error);
+        }
+    }
+
+    private async Task HandleCloseSkill(string skill)
+    {
+        Skills.Remove(skill);
+        _snackbar.Add("Skill removed", Severity.Success);
+    }
+
+    private async void HandleImageUpload(InputFileChangeEventArgs e)
+    {
+        try
+        {
+            if (e.GetMultipleFiles().Count > 0)
+            {
+                var file = e.File;
+
+                System.IO.FileInfo fileInfo = new System.IO.FileInfo(file.Name);
+                if (fileInfo.Extension.ToLower() == ".jpg" ||
+                    fileInfo.Extension.ToLower() == ".png" ||
+                    fileInfo.Extension.ToLower() == ".jpeg")
+                {
+                    Files = file;
+                    FileName = Files.Name;
+                }
+                else
+                {
+                    _snackbar.Add($"Please select .jpg/ .jpeg/ .png file only", Severity.Error);
+                }
+            }
+            else
+            {
+                _snackbar.Add($"Image uploading failed", Severity.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            _snackbar.Add($"{ex.Message}", Severity.Error);
+        }
+    }
+
+    private async Task HandleAboutUpsert()
+    {
+        try
+        {
+            if (Title == "CREATE")
+            {
+                if (Files != null)
+                {
+                    if (AboutMeModel.AboutImageUrl != null)
+                    {
+                        var imageName = AboutMeModel.AboutImageUrl.Replace($"{_navigationManager.BaseUri}Images/", "");
+                        var result = _fileUpload.DeleteFile(imageName);
+                    }
+                    AboutMeModel.AboutImageUrl = await _fileUpload.UploadFile(Files);
+                }
+                
+                AboutMeModel.Skills = string.Join(',', Skills);
+                var createdAboutme = await _aboutMeRepository.CreateAboutMe(AboutMeModel);
+                _snackbar.Add("Create Success", Severity.Success);
+            }
+            else
+            {
+                if (Files != null)
+                {
+                    if (AboutMeModel.AboutImageUrl != null)
+                    {
+                        var imageName = AboutMeModel.AboutImageUrl.Replace($"{_navigationManager.BaseUri}Images/", "");
+                        var result = _fileUpload.DeleteFile(imageName);
+                    }
+                    AboutMeModel.AboutImageUrl = await _fileUpload.UploadFile(Files);
+                }
+
+                AboutMeModel.Skills = string.Join(',', Skills);
+                var updatedAboutme = await _aboutMeRepository.UpdateAboutMe(AboutMeModel.Id, AboutMeModel);
+                _snackbar.Add("Update Success", Severity.Success);
+            }
+        }
+        catch (Exception)
+        {
+            _snackbar.Add("Fail", Severity.Error);
+        }
+        _navigationManager.NavigateTo("/portfolio/about", true);
+    }
+
+}
