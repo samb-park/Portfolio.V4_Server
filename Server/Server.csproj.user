@@ -6,5 +6,7 @@
   <PropertyGroup>
     <ActiveDebugProfile>IIS Express</ActiveDebugProfile>
     <NameOfLastUsedPublishProfile>\\Mac\Home\Documents\GitHub\Personal\Portfolio\Server\Properties\PublishProfiles\sbpark - Zip Deploy.pubxml</NameOfLastUsedPublishProfile>
+    <_SelectedScaffolderID>IdentityScaffolder</_SelectedScaffolderID>
+    <_SelectedScaffolderCategoryPath>root/Identity</_SelectedScaffolderCategoryPath>
   </PropertyGroup>
 </Project>
